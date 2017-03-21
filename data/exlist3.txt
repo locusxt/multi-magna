@@ -1,0 +1,3 @@
+ex3.gw
+ex2.gw
+ex1.gw

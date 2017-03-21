@@ -1,0 +1,11 @@
+Since multiMAGNA++ uses pthreads, we need a POSIX compliant compiler with pthreads support to compile it.
+In Unix and Mac OS X, you can use gcc and its variants. For Windows, either Cygwin or MingGW will work.
+To compile in Unix, Mac, Cygwin, or MinGW, run make clean and then
+make all
+
+For Windows, since Visual C++ doesn't support pthreads (and a bunch of other POSIX stuff that I used), I opted to use MinGW.
+Here is what I did specifically.
+1. I went to http://tdm-gcc.tdragon.net/ and followed the instructions to install MinGW-w64 (either 32-bit or 64-bit)
+2.
+To compile with MinGW, run make clean and then
+make all

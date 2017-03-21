@@ -1,0 +1,6 @@
+ex3_A	ex2_C	ex1_A
+ex3_B	ex2_B	ex1_B
+ex3_C	ex2_A	ex1_C
+ex3_D	ex2_D	ex1_D
+ex3_F	ex2_F	-
+ex3_G	ex2_E	ex1_E
