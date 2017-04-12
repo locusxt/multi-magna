@@ -4,6 +4,7 @@
 #include "graph.h"
 #include <pthread.h>
 
+
 struct population {
     struct alignment** alignment_set;
     int pop_size;

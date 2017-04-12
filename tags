@@ -1,0 +1,24 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+copy_graph	data/graph_generator.py	/^def copy_graph(new_prefix, graph):$/;"	kind:function	line:156
+debug	data/graph_generator.py	/^debug = 0$/;"	kind:variable	line:6
+gen_complete_graph	data/gengraphs.py	/^def gen_complete_graph(prefix, node_num):$/;"	kind:function	line:1
+gen_complete_graph	data/graph_generator.py	/^def gen_complete_graph(prefix, node_num):$/;"	kind:function	line:8
+gen_complete_graph	mine/gengraphs.py	/^def gen_complete_graph(prefix, node_num):$/;"	kind:function	line:1
+gen_graphs	data/gengraphs.py	/^def gen_graphs(prefix, graph_num, node_num):$/;"	kind:function	line:14
+gen_graphs	data/graph_generator.py	/^def gen_graphs(prefix, graph_num, node_num):$/;"	kind:function	line:48
+gen_graphs	mine/gengraphs.py	/^def gen_graphs(prefix, graph_num, node_num):$/;"	kind:function	line:14
+gen_min_graph	data/graph_generator.py	/^def gen_min_graph(prefix, node_num):$/;"	kind:function	line:60
+gen_min_graphs	data/graph_generator.py	/^def gen_min_graphs(prefix, graph_num, node_num):$/;"	kind:function	line:180
+gen_mtx	data/graph_generator.py	/^def gen_mtx(node_num):$/;"	kind:function	line:88
+gen_random_graph	data/graph_generator.py	/^def gen_random_graph(prefix, node_num, ratio):$/;"	kind:function	line:103
+gen_random_graphs	data/graph_generator.py	/^def gen_random_graphs(prefix, graph_num, node_num, ratio):$/;"	kind:function	line:197
+gengraphs.py	data/gengraphs.py	1;"	kind:file	line:1
+gengraphs.py	mine/gengraphs.py	1;"	kind:file	line:1
+graph2str	data/graph_generator.py	/^def graph2str(graph_dict):$/;"	kind:function	line:35
+graph_generator.py	data/graph_generator.py	1;"	kind:file	line:1
+random	data/graph_generator.py	/^import random$/;"	kind:namespace	line:4

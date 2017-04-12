@@ -10,6 +10,8 @@
 #define DEBUG_CROSS 0
 #define SORT 1
 
+
+
 struct population* population_malloc(struct carrier* rel, int pop_size, int pop_elite, struct graph** gs, int n_gs, int n_threads) {
     struct population* pop = (struct population*)malloc(sizeof *pop);
     int pop_temp = pop_size - pop_elite;
@@ -504,6 +506,16 @@ void run_simulation(char* graphs_file, char* init_pop_file, char* output_file_na
     if (init_pop_file == NULL) pop = population_random(rel, pop_size, pop_elite, gs, ngs, n_threads);
     else pop = population_read(rel, pop_size, pop_elite, gs, ngs, init_pop_file, n_threads);
 
+    //cal base my score
+    struct alignment** as= pop->alignment_set;
+    for (i = 0; i < ngs; ++i){
+        struct alignment* a = as[i];
+        base_my_score += a->my_score;
+    }
+    
+    base_my_score /= ngs;
+    printf("base score: %f\n", base_my_score);
+
     pop->gs2orig = gs2orig;
     pop->orig2gs = orig2gs;
 	
@@ -551,12 +563,13 @@ void run_simulation(char* graphs_file, char* init_pop_file, char* output_file_na
 // on every some generation
 void population_save_best_stats(int geni, struct population* pop, char* stats_file) {
 	struct alignment* a = pop->alignment_set[0];
-    printf("generation %d runtime %ld score %f edge_score %f node_score %f\n",
+    printf("generation %d runtime %ld score %f edge_score %f node_score %f my_score %f\n",
            geni,
            pop->runtime,
            a->score,
            a->edge_score,
-           a->node_score);
+           a->node_score,
+           a->my_score);
     
     FILE* output_fd = NULL;    
     if (geni==0) output_fd = fopen(stats_file,"w");

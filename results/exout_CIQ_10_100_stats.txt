@@ -1,0 +1,2 @@
+generation 0 runtime 0 score 0.307778 edge_score 0.307778 node_score 0.000000
+generation 100 runtime 1 score 0.350000 edge_score 0.350000 node_score 0.000000

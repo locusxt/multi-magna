@@ -326,6 +326,8 @@ int intersection_count(struct permutation* p, struct permutation* q) {
 	return count;
 }
 
+//多个排列，传入的实际是permutation指针的数组
+//需要拿一个permutation数组存储最优结果
 void tensor(struct permutation** rs, struct permutation** ps, struct permutation** qs, struct tensor_aux_space* taux) {
     int i;
     for(i=0;i<taux->k-1;i++) {

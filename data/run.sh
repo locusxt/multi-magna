@@ -1,2 +1,2 @@
 mkdir ../results
-../src/magna -G exlist3.txt -d exlistgdv3.txt -m CIQ -a 0.5 -p 10 -n 100 -o ../results/exout
+../src/magna -G ./data2/rlist.txt -m CIQ -p 500 -n 1000 -f 20 -o ../results/exout

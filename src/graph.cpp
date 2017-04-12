@@ -4,6 +4,12 @@
 #include <map>
 #include "graph.h"
 
+#include <string>
+#include <cstring>
+#include <cmath>
+
+float base_my_score = 0.0;
+
 // Graph
 // Sort vertices by node name, dictionary order on names
 // Sort edges by node number, dictionary order on pairs of integers
@@ -1056,9 +1062,324 @@ float alignment_cluster_interaction_quality(struct alignment *a, struct compute_
     return (cis/(float)total_edges);    
 }    
 
+//mine
+void delete_fmp(struct alignment* a, int** fmp){
+    struct graph ** networks = a->networks;
+    int gn = a->n_networks;
+    int vn = networks[gn - 1]->n_vertices;
+    int i, j, k;
+
+    for (i = 0; i < vn; ++i){
+        free(fmp[i]);
+    }
+    free(fmp);
+}
+
+//my function alignment->fusion node
+int** alignment_fusion_node(struct alignment* a){
+    struct graph ** networks = a->networks;
+    int gn = a->n_networks;
+    int vn = networks[gn - 1]->n_vertices;
+
+    //fmp[i][j]: fusion node i in graph j
+    int** fmp = (int**) malloc(vn * sizeof(int*));
+    int i, j, k;
+    for (i = 0; i < vn; ++i){
+        fmp[i] = (int*) malloc(gn * sizeof(int));
+    }
+    //init, TODO: use memset
+    for (i = 0; i < vn; ++i){
+        for (j = 0; j < gn; ++j){
+            fmp[i][j] = -1;
+        }
+    }
+    // printf("test point a\n");
+
+    struct multipermutation* mp = a->mp;
+    for (i = 0; i < vn; ++i)
+        fmp[i][gn - 1] = i;
+    
+    // printf("test point b\n");
+    for (i = gn - 1; i > 0; --i){
+        int pi = i - 1;//prev graph
+        struct permutation * p = mp->perms[i - 1]; //graph 0 has no perm
+        int* seq = p->sequence;
+        int lvn = networks[pi]->n_vertices;//local vertex num
+        for (j = 0; j < lvn; ++j){//j th element in seq
+            for (k = 0; k < vn; ++k){//visit all fusion nodes
+                if (fmp[k][i] == seq[j]){
+                    fmp[k][pi] = j;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // printf("test point c\n");
+
+    return fmp;
+}
+
+void delete_emp(struct alignment* a, int*** emp){
+    struct graph ** networks = a->networks;
+    int gn = a->n_networks;
+    int vn = networks[gn - 1]->n_vertices;
+    int i, j, k;
+
+    for (i = 0; i < vn; ++i){
+        for(j = 0; j < vn; ++j){
+            free(emp[i][j]);
+        }
+        free(emp[i]);
+    }
+    free(emp);
+}
+
+int*** alignment_fusion_edges(struct alignment* a, int** fmp){
+    struct graph ** networks = a->networks;
+    int gn = a->n_networks;//graph num
+    int vn = networks[gn - 1]->n_vertices;//max vertex num_get
+
+    //fmp[i][j]: fusion node i in graph j
+    int*** emp = (int***) malloc(vn * sizeof(int**));
+    int i, j, k;
+    for (i = 0; i < vn; ++i){
+        emp[i] = (int**) malloc(vn * sizeof(int*));
+        for (j = 0; j < vn; ++j){
+            emp[i][j] = (int*) malloc(gn * sizeof(int));
+            for (k = 0; k < gn; ++k)
+                emp[i][j][k] = -1;
+        }
+    }
+
+    for (i = 0; i < vn; ++i){
+        for (j = 0; j < vn; ++j){
+            for (k = 0; k < gn; ++k){
+                int ni = fmp[i][k];
+                int nj = fmp[j][k];
+                if (ni == -1 || nj == -1) {
+                    emp[i][j][k] = 0;
+                    continue;
+                }
+                struct graph* g = networks[k];
+                if (graph_is_edge(g, ni, nj)) emp[i][j][k] = 1;
+                else emp[i][j][k] = 0;
+            }
+        }
+    }
+    return emp;
+} 
+
+
+//a, b bitset
+float cal_similarity(int a, int b, int vn){
+    if (a == 0 && b == 0) return 1.0; // self
+    int share, total, i;
+    int na, nb;
+    for (i = 0; i < vn; ++i){
+        na = a & (1 << i);
+        nb = b & (1 << i);
+        if (na && nb) ++share;
+        if (na || nb) ++total;
+    }
+    float ans =  ((float)share) / ((float)total);
+    // printf("%d %d %f\n", a, b, ans);
+    return ans;
+}
+
+float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
+    struct graph ** networks = a->networks;
+    int gn = a->n_networks;//graph num
+    int vn = networks[gn - 1]->n_vertices;//max vertex num_get
+    float score = 0.0;
+
+    int i, j, k;
+    // //cal vi, ei
+    // for (i = 0; i < vn; ++i){
+    //     int wi = 0;
+    //     for (j = 0; j < gn; ++j){
+    //         if (fmp[i][j] != -1) ++wi;
+    //     }
+    // }
+
+    for (i = 0; i < vn; ++i){
+        int vi, ei;
+        vi = 0;
+        ei = 0;
+        for (j = 0; j < gn; ++j)
+            if (fmp[i][j] != -1) ++vi;
+
+        int * u = (int*) malloc(gn * sizeof(int)); //user, TODO: use bitset later
+        memset(u, 0, sizeof(u));
+        for (j = 0; j < vn; ++j){
+            if (j == i) continue;
+            //node i j
+            for (k = 0; k < gn; ++k){
+                if (emp[i][j][k]) 
+                    u[k] = u[k] | (1 << j);
+            }
+        }
+        int* cnt = (int*) malloc(gn * sizeof(int));
+        for (j = 0; j < gn; ++j) cnt[j] = 1;
+        //find same user
+        for (j = 0; j < gn; ++j){
+            if (!cnt[j]) continue;
+            for (int k = j + 1; k < gn; ++k){
+                if (!cnt[k]) continue; //impossible
+                if (u[j] == u[k]){
+                    ++cnt[j];
+                    cnt[k] = 0;
+                }
+            }
+        }
+        // printf("=======debug u=======\n");
+        // printf("=======debug u=======\n");
+        // printf("=======debug u=======\n");
+        // printf("=======debug u=======\n");
+        // printf("=======debug u=======\n");
+        // for (j = 0; j < gn; ++j){
+        //     if (u[j] == 0)
+        //         printf("%d %d\n", cnt[j], u[j]);
+        // }
+        // printf("-------\n");
+        
+        //users to clusters
+        int c_num = 0; //cluster cnt
+        int* c_u = (int*) malloc(gn * sizeof(int));
+        int* c_cnt = (int*) malloc(gn * sizeof(int));
+        for (j = 0; j < gn; ++j){
+            if (cnt[j]) { //u[j] can be 0
+                c_cnt[c_num] = cnt[j];
+                c_u[c_num++] = u[j];
+            }
+        }
+
+        //  for (j = 0; j < c_num; ++j){
+        //     if (c_u[j] == 0)
+        //         printf("%d %d\n", c_cnt[j], c_u[j]);
+        // }
+        // printf("-------\n");
+
+        float* p = (float*) malloc(c_num * sizeof(float));
+        for (j = 0; j < c_num; ++j){
+            p[j] = float(c_cnt[j]) / float(gn);//!!!!!
+
+            int t = 0;//edge num
+            for (k = 0; k < gn; ++k){
+                if (c_u[j] & (1 << k)) ++t;
+            }
+            ei += c_cnt[j] * t;
+        }
+        // printf("p: ");
+        // for (j = 0; j < c_num; ++j)
+        //     printf("%f ", p[j]);
+        // printf("\n");
+
+        float local_score = 0.0;
+        for (j = 0; j < c_num; ++j){
+            float in_log = 0.0, sim = 0.0;
+            for (k = 0; k < c_num; ++k){
+                sim = cal_similarity(c_u[j], c_u[k], gn);
+                in_log += p[k] * sim;
+                
+                // printf("pk: %f, sim: %f, in_log: %f\n", p[k], sim, in_log);
+            }
+            local_score += p[j] * log(in_log) * (-1.0);
+        }
+        // printf("ei: %d, vi: %d, ls: %f\n", ei, vi, local_score);
+        score += ei * vi * local_score;
+
+        free(u);
+        free(cnt);
+        free(c_u);
+        free(c_cnt);
+    }
+    return score;
+}
+
 
 void alignment_compute(struct alignment* a, struct carrier* rel,
                        compute_aux_space *caux) {
+    //print info to check alignment
+    struct graph ** networks = a->networks;
+    int graph_n = a->n_networks;
+    struct graph* n0 = networks[0];
+    int vn = n0->n_vertices;
+    int i, j, k;
+    // printf("=======debug edge=======\n");
+    // for (i = 0; i < vn; ++i){
+    //     for (j = i + 1; j < vn; ++j){
+    //         if (graph_is_edge(n0, i, j))
+    //             printf("%d %d\n", i, j);
+    //     }
+    // }
+
+
+    struct multipermutation* mp = a->mp;
+    struct multipermutation* invmp = a->invmp;
+
+    // printf("=======debug perm=======\n");
+    // for (i = 0; i < graph_n - 1; ++i){
+    //     printf("%d:", i + 1); //graph 0 has no perm
+    //     struct permutation * p = mp->perms[i];
+    //     int d = p->degree;
+    //     int* seq = p->sequence;
+    //     for (j = 0; j < d; ++j)
+    //         printf("%d ", seq[j]);
+    //     printf ("\n");
+    // }
+
+
+    //invmp not usable
+    // printf("-------\n");
+    // for (i = 1; i < graph_n; ++i){
+    //     printf("%d:", i);
+    //     struct permutation * p = invmp->perms[i];
+    //     int d = p->degree;
+    //     int* seq = p->sequence;
+    //     for (j = 0; j < d; ++j)
+    //         printf("%d ", seq[j]);
+    //     printf ("\n");
+    // }
+
+    int ** fmp = alignment_fusion_node(a);
+    int gn = a->n_networks;
+    int f_vn = networks[gn - 1]->n_vertices;
+
+    // printf("-------fusion node-------\n");
+    // for (i = 0; i < f_vn; ++i){
+    //     printf("%d:", i);
+    //     for (j = 0; j < gn; ++j){
+    //         printf("%d ", fmp[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+
+    int *** emp = alignment_fusion_edges(a, fmp);
+
+    // printf("-------fusion edge-------\n");
+    // for (i = 0; i < f_vn; ++i){
+    //     for (j = 0; j < f_vn; ++j){
+    //         printf("%d, %d: ", i, j);
+    //         for (k = 0; k < gn; ++k){
+    //             if (emp[i][j][k]) printf("%d ", k);
+    //         }
+    //         printf("\n");
+    //     }
+    // }
+
+
+    float score = cal_my_score(a, fmp, emp);
+    a->my_score = score; // need 1 / score
+
+    // printf("-------fusion score-------\n");
+    // printf("score: %f\n", score);
+
+
+    delete_fmp(a, fmp);
+    delete_emp(a, emp);
+
+
     alignment_composite_graph(a,caux);
 
     float es;
@@ -1072,6 +1393,7 @@ void alignment_compute(struct alignment* a, struct carrier* rel,
 
     a->edge_score = es;
     a->node_score = 0.0;
+    // a->my_score = 0.0;
 
     /* add node score here */
     if (rel->use_alpha) {
@@ -1089,6 +1411,23 @@ void alignment_compute(struct alignment* a, struct carrier* rel,
 //    printf("alpha: %f, score: %f\n", rel->alpha, a->score);
 //    printf("dom: %d, rge: %d, pdeg: %d\n", a->networks[0]->n_vertices,
 //           a->networks[1]->n_vertices, a->perm->degree);
+
+    // a->score = (1.0 / (a->my_score + 1.0));
+
+    // if (base_my_score == 0.0){
+    //     a->score = 1.0 / (a->my_score + 1.0);
+    // }
+    // else{
+    //     if (a->my_score > base_my_score){
+    //         a->score = 0.0;
+    //     }
+    //     else{
+    //         a->score = 1.0 - a->my_score / base_my_score;
+    //     }
+    // }
+    // a->score = sqrt(a->score);
+
+    // a->edge_score = a->score;
 
 	a->is_computed = 1;
 }

@@ -1,0 +1,11 @@
+generation 0 runtime 0 score 0.153158 edge_score 0.153158 node_score 0.000000
+generation 1000 runtime 21 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 2000 runtime 41 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 3000 runtime 64 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 4000 runtime 84 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 5000 runtime 105 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 6000 runtime 125 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 7000 runtime 146 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 8000 runtime 167 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 9000 runtime 187 score 0.166974 edge_score 0.166974 node_score 0.000000
+generation 10000 runtime 207 score 0.166974 edge_score 0.166974 node_score 0.000000

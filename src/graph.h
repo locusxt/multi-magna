@@ -10,6 +10,11 @@
 #include "genetic.h"
 #include <algorithm> // std::min
 
+#ifndef _bms_
+#define _bms_
+extern float base_my_score;
+#endif
+
 // uncompressed sparse graph format (yale)
 struct spmat {
     int nr;
@@ -88,6 +93,7 @@ struct alignment {
     float score, edge_score, node_score;
     float s3_score;
     int is_computed;
+    float my_score;
 };
 
 struct compute_aux_space {
