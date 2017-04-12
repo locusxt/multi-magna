@@ -1,2 +1,3 @@
 *.o
 *.gw
+results/*.txt
