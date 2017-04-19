@@ -10,10 +10,10 @@
 #include "genetic.h"
 #include <algorithm> // std::min
 
-#ifndef _bms_
-#define _bms_
+// #ifndef _bms_
+// #define _bms_
 extern float base_my_score;
-#endif
+// #endif
 
 // uncompressed sparse graph format (yale)
 struct spmat {

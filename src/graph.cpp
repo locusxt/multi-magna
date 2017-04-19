@@ -1293,6 +1293,7 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
         free(cnt);
         free(c_u);
         free(c_cnt);
+        free(p);
     }
     return score;
 }
@@ -1412,7 +1413,7 @@ void alignment_compute(struct alignment* a, struct carrier* rel,
 //    printf("dom: %d, rge: %d, pdeg: %d\n", a->networks[0]->n_vertices,
 //           a->networks[1]->n_vertices, a->perm->degree);
 
-    // a->score = (1.0 / (a->my_score + 1.0));
+    a->score = (1.0 / (a->my_score + 1.0));
 
     // if (base_my_score == 0.0){
     //     a->score = 1.0 / (a->my_score + 1.0);
