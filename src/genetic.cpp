@@ -509,12 +509,14 @@ void run_simulation(char* graphs_file, char* init_pop_file, char* output_file_na
     //cal base my score
     struct alignment** as= pop->alignment_set;
     // int pop_size = pop->pop_size;
-    for (i = 0; i < pop_size; ++i){
+    float top_rate = 0.1;
+    int num = pop_size * top_rate;
+    for (i = 0; i < num; ++i){
         struct alignment* a = as[i];
         base_my_score += a->my_score;
     }
     
-    base_my_score /= pop_size;
+    base_my_score /= num;
     printf("base score: %f\n", base_my_score);
 
     pop->gs2orig = gs2orig;
