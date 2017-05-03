@@ -1,3 +1,4 @@
 *.o
 *.gw
+*.csv
 results/*.txt

@@ -224,4 +224,4 @@ def gen_random_graphs(prefix, graph_num, node_num, ratio):
 #print random.randint(0, 2)
 
 #gen_min_graphs("g", 20, 20)
-gen_random_graphs("r", 20, 20, 0.1)
+gen_random_graphs("r", 20, 20, 0.5)

@@ -206,15 +206,18 @@ struct population* population_random(struct carrier* rel, int pop_size, int pop_
 // swap two random indices
 void population_mutate(struct population* pop, struct carrier* rel) {
     float mutation_prob = 0.01;
+    // float mutation_prob = 0.05;
     struct alignment** alignment_set = pop->alignment_set;
     int pop_size = pop->pop_size;
     int i,j,r,s,k,l,x,y,tmp,degree,*sequence;
     float u;
-    for (i = 0; i < pop_size; i++) {
+    // bool find_same;//find same score
+    for (i = 1; i < pop_size; i++) {//i=0 -> i=1, do not mutate the best individual
         struct alignment* a = alignment_set[i];
         struct permutation** perms = a->mp->perms;
         k = a->mp->k;
         u = ((float)rand()/(float)RAND_MAX);
+
         if (u<mutation_prob) {
             a->is_computed = 0;
             for(l=0;l<k-1;l++) {
@@ -244,6 +247,7 @@ void population_mutate(struct population* pop, struct carrier* rel) {
             }
         }
     }
+    // if (find_same) printf("hit\n");
 }
 
 void population_sort(struct population* pop, struct carrier* rel) {
@@ -312,6 +316,51 @@ void population_print(struct population* pop) {
     int i;
     for (i = 0; i < pop_size + pop_temp; i++)
         printf("EC %p %d: %f\n", alignment_set[i], i, alignment_set[i]->edge_score);
+}
+
+void pop_diversity(struct population* pop, struct carrier* rel){
+    int n = pop->pop_size;
+    struct alignment** alignment_set = pop->alignment_set;
+    int pop_size = pop->pop_size;
+    int i,j,r,s,k,l,x,y,tmp,degree,*sequence;
+    float u;
+    float ratio = 0.5;
+    float hold_rate = 0.005;
+    // int hold = pop->pop_size * hold_rate;
+    int hold = 1;
+
+    for (i = hold; i < n; ++i){//start from hold
+        struct alignment* a = alignment_set[i];
+        struct permutation** perms = a->mp->perms;
+        k = a->mp->k;
+        j = i - hold;
+        struct alignment* b = alignment_set[j];
+        if (a->score == b->score){//mutate
+            a->is_computed = 0;
+            // printf("hit %f %f\n", a->score, b->score);
+            u = ((float)rand()/(float)RAND_MAX);
+            if (u < ratio){
+                for(l=0;l<k-1;l++) {
+                    degree = perms[l]->degree;
+                    sequence = perms[l]->sequence;
+                    // u = ((float)rand()/(float)RAND_MAX);
+                    // if(u<1/(k-1)) { //what?
+                    x = rand() % degree;
+                    y = rand() % degree;
+                    tmp = sequence[x];
+                    sequence[x] = sequence[y];
+                    sequence[y] = tmp;
+                    // }
+                }
+            }
+            else{
+                alignment_randomize(a);
+            }
+            // alignment_compute(a, rel, pop->cauxs[0]);//not here
+            // printf("%f\n", a->score);
+        }
+        
+    }
 }
 
 void population_step_roulette(struct population* pop, struct carrier* rel, int cur_gen) {
@@ -384,10 +433,28 @@ void population_step_roulette(struct population* pop, struct carrier* rel, int c
 	
     population_mutate(pop, rel);
     population_sort(pop, rel);
+    //mine
+    pop_diversity(pop, rel);
+    population_sort(pop, rel);
+
 	
     if (DEBUG_CROSS == 1)
         population_print(pop);
 }
+
+//mine
+void pop_print(struct population* pop){
+    printf("===pop info====\n");
+    int n = pop->pop_size;
+    struct alignment** as = pop->alignment_set;
+    int i, j;
+    for (i = 0; i < n; ++i){
+        printf("%f\n", as[i]->score);
+    }
+    return;
+}
+
+
 
 void* slice_alignment_tensor(void *p) {
     struct parallel_tensor_task* task = (struct parallel_tensor_task*)p;    
@@ -484,7 +551,7 @@ void run_simulation(char* graphs_file, char* init_pop_file, char* output_file_na
     if(!gs) mg_error("Allocation error.");
 
     // sort the networks by the number of degrees
-    int i;
+    int i, j;
     std::vector<intpair> degrees(ngs);
     for (i=0; i<ngs; i++) {
         degrees[i].first = i;
@@ -552,6 +619,8 @@ void run_simulation(char* graphs_file, char* init_pop_file, char* output_file_na
             //        population_save_best(pop, NULL);
             sprintf(alignment_file, "%s_%s_%d_%d_stats.txt", output_file_name, opt_str, pop_size, n_gen);
             population_save_best_stats(i+1, pop, alignment_file);
+
+            // pop_print(pop);
         }
     }
 
@@ -566,13 +635,16 @@ void run_simulation(char* graphs_file, char* init_pop_file, char* output_file_na
 // on every some generation
 void population_save_best_stats(int geni, struct population* pop, char* stats_file) {
 	struct alignment* a = pop->alignment_set[0];
-    printf("generation %d runtime %ld score %f edge_score %f node_score %f my_score %f\n",
-           geni,
-           pop->runtime,
-           a->score,
-           a->edge_score,
-           a->node_score,
-           a->my_score);
+    // printf("generation %d runtime %ld score %f edge_score %f node_score %f my_score %f\n",
+    //        geni,
+    //        pop->runtime,
+    //        a->score,
+    //        a->edge_score,
+    //        a->node_score,
+    //        a->my_score);
+    
+    //mine print
+    printf("%d, %f\n", geni, a->score);
     
     FILE* output_fd = NULL;    
     if (geni==0) output_fd = fopen(stats_file,"w");
@@ -693,7 +765,8 @@ void quick_locally_insertion(struct alignment** alignment_set, struct carrier* r
 	sub_quick_locally_insertion(alignment_set, rel, 0, n);
 }
 
-int roulette(struct alignment** alignment_set, int n, float total_weight) {
+//original version
+int roulette_n(struct alignment** alignment_set, int n, float total_weight) {
 	float w = ((float)rand() / RAND_MAX) * (total_weight + n);
 	float sum = 0;
 	int i;
@@ -702,5 +775,42 @@ int roulette(struct alignment** alignment_set, int n, float total_weight) {
 		if (sum > w)
 			return i;
 	}
+	return n - 1;
+}
+
+//my based on rank version
+//total_weight not used
+int roulette_(struct alignment** alignment_set, int n, float total_weight) {
+    // int total_n = (1+n) * n / 2;
+    int total_n = (2*n + 1) * (1+n) * n / 6;
+	float w = ((float)rand() / RAND_MAX) * (total_n);
+	float sum = 0;
+	int i;
+	for (i = 0; i < n; i++) {
+		sum += (n - i) * (n - i);
+		if (sum >= w){
+            // printf("select: %d\n", i);
+			return i;
+        }
+	}
+    // printf("select: %d\n", n-1);
+	return n - 1;
+}
+
+int roulette(struct alignment** alignment_set, int n, float total_weight) {
+    // int total_n = (1+n) * n / 2;
+    float c = 0.99;
+    float total_n = (1.0 - pow(c, n)) / (1.0 - c);
+	float w = ((float)rand() / RAND_MAX) * (total_n);
+	float sum = 0;
+	int i;
+	for (i = 0; i < n; i++) {
+		sum += pow(c, i);
+		if (sum >= w){
+            // printf("select: %d\n", i);
+			return i;
+        }
+	}
+    // printf("select: %d\n", n-1);
 	return n - 1;
 }
