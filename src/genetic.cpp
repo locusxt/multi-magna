@@ -635,16 +635,16 @@ void run_simulation(char* graphs_file, char* init_pop_file, char* output_file_na
 // on every some generation
 void population_save_best_stats(int geni, struct population* pop, char* stats_file) {
 	struct alignment* a = pop->alignment_set[0];
-    // printf("generation %d runtime %ld score %f edge_score %f node_score %f my_score %f\n",
-    //        geni,
-    //        pop->runtime,
-    //        a->score,
-    //        a->edge_score,
-    //        a->node_score,
-    //        a->my_score);
+    printf("generation %d runtime %ld score %f edge_score %f node_score %f my_score %f\n",
+           geni,
+           pop->runtime,
+           a->score,
+           a->edge_score,
+           a->node_score,
+           a->my_score);
     
     //mine print
-    printf("%d, %f\n", geni, a->score);
+    // printf("%d, %f, %f\n", geni, a->score, a->edge_score);
     
     FILE* output_fd = NULL;    
     if (geni==0) output_fd = fopen(stats_file,"w");

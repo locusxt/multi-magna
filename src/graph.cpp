@@ -7,6 +7,9 @@
 #include <string>
 #include <cstring>
 #include <cmath>
+#include <bitset>
+#define BSSIZE 32  
+using std::bitset; 
 
 float base_my_score = 0.0;
 
@@ -385,6 +388,7 @@ void graph_read_edges(struct graph* g, FILE* input_file, char* file_name) {
 		vertex2 = strtok(NULL, " ");
 		// Add things here to retrieve other information
 		edge_set[i] = edge_malloc(atoi(vertex1) - 1, atoi(vertex2) - 1);
+        // printf("load: %d %d\n", atoi(vertex1) - 1, atoi(vertex2) - 1);
 	}
     g->sp = edge_set_to_spmat(edge_set, g->n_vertices, n_edges);
     graph_edge_delete(g);
@@ -543,15 +547,20 @@ int graph_find_edge(struct graph* g, int v1, int v2) {
 }
 
 int graph_is_edge(struct graph* g, int vertex1, int vertex2) {
+    int ans = 0;
+
 	int index = graph_find_edge(g, vertex1, vertex2);
 	if (index >= 0)
-		return 1;
+        ans = 1;
+		// return 1;
 	
 	index = graph_find_edge(g, vertex2, vertex1);
 	if (index >= 0)
-		return 1;
-	
-	return 0;
+        ans = 1;
+		// return 1;
+    // printf("test %d %d %d\n", vertex1, vertex2, ans);
+	// printf("index:%d\n", index);
+	return ans;
 }
 
 
@@ -1171,7 +1180,8 @@ int*** alignment_fusion_edges(struct alignment* a, int** fmp){
 } 
 
 
-//a, b bitset
+//not used
+//use cal_nsimilarity
 float cal_similarity(int a, int b, int vn){
     if (a == 0 && b == 0) return 1.0; // self
     int share, total, i;
@@ -1183,14 +1193,33 @@ float cal_similarity(int a, int b, int vn){
         if (na || nb) ++total;
     }
     float ans =  ((float)share) / ((float)total);
-    // printf("%d %d %f\n", a, b, ans);
+    printf("sim: %d %d %f\n", a, b, ans);
     return ans;
 }
+
+//a, b bitset
+float cal_nsimilarity(bitset<BSSIZE> a, bitset<BSSIZE> b, int vn){
+    if (a.none() && b.none()) return 1.0; // self
+    int share = 0, total = 0, i;
+    bool na, nb;
+    for (i = 0; i < vn; ++i){
+        na = a.test(i);
+        nb = b.test(i);
+        if (na && nb) ++share;
+        if (na || nb) ++total;
+    }
+    float ans =  ((float)share) / ((float)total);
+    // printf("sim: %d %d %f\n", a, b, ans);
+    // std::cout << share << ", " << total << ", " << ans << std::endl; 
+    // std::cout << a << std::endl << b << " " << ans << std::endl; 
+    return ans;
+}
+
 
 float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
     struct graph ** networks = a->networks;
     int gn = a->n_networks;//graph num
-    int vn = networks[gn - 1]->n_vertices;//max vertex num_get
+    int vn = networks[gn - 1]->n_vertices;//max vertex num_get 最后一个图的节点个数
     float score = 0.0;
 
     int i, j, k;
@@ -1210,13 +1239,22 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
             if (fmp[i][j] != -1) ++vi;
 
         int * u = (int*) malloc(gn * sizeof(int)); //user, TODO: use bitset later
+        bitset<BSSIZE> * nu = (bitset<BSSIZE> *) malloc (gn * sizeof(bitset<BSSIZE>));
+
         memset(u, 0, sizeof(u));
+        // memset(nu, 0, sizeof(nu));
+        for (j = 0; j < gn; ++j){
+            nu[j].reset();//set to all 0
+            // std::cout << nu[j] << std::endl;
+        }
         for (j = 0; j < vn; ++j){
             if (j == i) continue;
             //node i j
             for (k = 0; k < gn; ++k){
-                if (emp[i][j][k]) 
-                    u[k] = u[k] | (1 << j);
+                if (emp[i][j][k]) {
+                    // u[k] = u[k] | (1 << j);
+                    nu[k].set(j);
+                }
             }
         }
         int* cnt = (int*) malloc(gn * sizeof(int));
@@ -1226,7 +1264,8 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
             if (!cnt[j]) continue;
             for (int k = j + 1; k < gn; ++k){
                 if (!cnt[k]) continue; //impossible
-                if (u[j] == u[k]){
+                // if (u[j] == u[k]){
+                if (nu[j] == nu[k]){
                     ++cnt[j];
                     cnt[k] = 0;
                 }
@@ -1245,12 +1284,17 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
         
         //users to clusters
         int c_num = 0; //cluster cnt
-        int* c_u = (int*) malloc(gn * sizeof(int));
-        int* c_cnt = (int*) malloc(gn * sizeof(int));
+        int* c_u = (int*) malloc(gn * sizeof(int));//not used, used c_nu
+        // int* c_u = (int*) malloc(vn * sizeof(int));
+        // int** c_nu = (int*) malloc(gn * sizeof(int*));
+        bitset<BSSIZE> * c_nu = (bitset<BSSIZE> *) malloc (gn * sizeof(bitset<BSSIZE>));
+
+        int* c_cnt = (int*) malloc(vn * sizeof(int));
         for (j = 0; j < gn; ++j){
             if (cnt[j]) { //u[j] can be 0
                 c_cnt[c_num] = cnt[j];
-                c_u[c_num++] = u[j];
+                // c_u[c_num++] = u[j];
+                c_nu[c_num++] = nu[j];
             }
         }
 
@@ -1266,10 +1310,12 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
 
             int t = 0;//edge num
             for (k = 0; k < gn; ++k){
-                if (c_u[j] & (1 << k)) ++t;
+                // if (c_u[j] & (1 << k)) ++t;
+                if (c_nu[j].test(k)) ++t;
             }
             ei += c_cnt[j] * t;
         }
+        // printf("c_num:%d\n", c_num);
         // printf("p: ");
         // for (j = 0; j < c_num; ++j)
         //     printf("%f ", p[j]);
@@ -1279,7 +1325,8 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
         for (j = 0; j < c_num; ++j){
             float in_log = 0.0, sim = 0.0;
             for (k = 0; k < c_num; ++k){
-                sim = cal_similarity(c_u[j], c_u[k], gn);
+                // sim = cal_similarity(c_u[j], c_u[k], gn);
+                sim = cal_nsimilarity(c_nu[j], c_nu[k], vn);//not gn
                 in_log += p[k] * sim;
                 
                 // printf("pk: %f, sim: %f, in_log: %f\n", p[k], sim, in_log);
@@ -1289,11 +1336,17 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
         // printf("ei: %d, vi: %d, ls: %f\n", ei, vi, local_score);
         score += ei * vi * local_score;
 
+        
+        // printf("test4\n");
         free(u);
         free(cnt);
         free(c_u);
         free(c_cnt);
+        free(nu);
+        free(c_nu);
         free(p);
+        // printf("test5\n");
+        
     }
     return score;
 }
@@ -1302,22 +1355,31 @@ float cal_my_score(struct alignment* a, int ** fmp, int*** emp){
 void alignment_compute(struct alignment* a, struct carrier* rel,
                        compute_aux_space *caux) {
     //print info to check alignment
+    // printf("in\n");
     struct graph ** networks = a->networks;
     int graph_n = a->n_networks;
     struct graph* n0 = networks[0];
-    int vn = n0->n_vertices;
+    struct graph* nlast = networks[graph_n - 1];
+    int vn = nlast->n_vertices;
+    // printf("vn:%d\n", vn);
     int i, j, k;
-    // printf("=======debug edge=======\n");
-    // for (i = 0; i < vn; ++i){
-    //     for (j = i + 1; j < vn; ++j){
-    //         if (graph_is_edge(n0, i, j))
-    //             printf("%d %d\n", i, j);
-    //     }
-    // }
+    int edge_debug_num = 0;
+    printf("=======debug edge=======\n");
+    for (i = 0; i < vn; ++i){
+        for (j = 0; j < vn; ++j){
+            if (graph_is_edge(nlast, i, j)){
+                ++edge_debug_num;
+                printf("%d %d\n", i, j);
+            }
+        }
+    }
+    printf("%d %d\n", vn, edge_debug_num);
+    printf("%d\n", nlast->n_edges);
 
 
     struct multipermutation* mp = a->mp;
     struct multipermutation* invmp = a->invmp;
+    // printf("test1\n");
 
     // printf("=======debug perm=======\n");
     // for (i = 0; i < graph_n - 1; ++i){
@@ -1355,6 +1417,7 @@ void alignment_compute(struct alignment* a, struct carrier* rel,
     //     }
     //     printf("\n");
     // }
+    // printf("test2\n");
 
     int *** emp = alignment_fusion_edges(a, fmp);
 
@@ -1370,11 +1433,12 @@ void alignment_compute(struct alignment* a, struct carrier* rel,
     // }
 
 
+    // printf("test3\n");
     float score = cal_my_score(a, fmp, emp);
     a->my_score = score; // need 1 / score
 
-    // printf("-------fusion score-------\n");
-    // printf("score: %f\n", score);
+    printf("-------fusion score-------\n");
+    printf("score: %f\n", score);
 
 
     delete_fmp(a, fmp);
@@ -1415,22 +1479,23 @@ void alignment_compute(struct alignment* a, struct carrier* rel,
 
     // a->score = (1.0 / (a->my_score + 1.0));
 
-    // if (base_my_score == 0.0){
-    //     a->score = 1.0 / (a->my_score + 1.0);
-    // }
-    // else{
-    //     if (a->my_score > base_my_score){
-    //         a->score = 0.0;
-    //     }
-    //     else{
-    //         a->score = 1.0 - a->my_score / base_my_score;
-    //     }
-    // }
+    if (base_my_score == 0.0){
+        a->score = 1.0 / (a->my_score + 1.0);
+    }
+    else{
+        if (a->my_score > base_my_score){
+            a->score = 0.0;
+        }
+        else{
+            a->score = 1.0 - a->my_score / base_my_score;
+        }
+    }
     // a->score = sqrt(a->score);
 
     // a->edge_score = a->score;
 
 	a->is_computed = 1;
+    // printf("out\n");
 }
 
 float alignment_nodescore_compute(struct alignment *a, struct carrier *rel) {

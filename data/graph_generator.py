@@ -65,7 +65,7 @@ def gen_min_graph(prefix, node_num):
     nodes_list = []
     for i in range(node_num):
         node_dict = {}
-        node_dict['label'] = "{|" + prefix + "_" + str(i + 1) + "}|"
+        node_dict['label'] = "|{" + prefix + "_" + str(i + 1) + "}|"
         node_dict['str'] = node_dict['label']
         nodes_list.append(node_dict)
     res_dict['nodes_list'] = nodes_list
@@ -137,8 +137,8 @@ def gen_random_graph(prefix, node_num, ratio):
     for i in range(delta_edges):
         cur_len = len(psb_edges)
         e_idx = random.randint(0, cur_len - 1)
-        src = psb_edges[e_idx][0]
-        tgt = psb_edges[e_idx][1]
+        src = psb_edges[e_idx][1]
+        tgt = psb_edges[e_idx][0]
         edge_dict = {}
         edge_dict['src'] = str(src + 1)
         edge_dict['target'] = str(tgt + 1)
@@ -162,7 +162,7 @@ def copy_graph(new_prefix, graph):
     prefix = new_prefix
     for i in range(nodes_num):
         node_dict = {}
-        node_dict['label'] = "{|" + prefix + "_" + str(i + 1) + "}|"
+        node_dict['label'] = "|{" + prefix + "_" + str(i + 1) + "}|"
         node_dict['str'] = node_dict['label']
         nodes_list.append(node_dict)
     gd['nodes_list'] = nodes_list
@@ -224,4 +224,4 @@ def gen_random_graphs(prefix, graph_num, node_num, ratio):
 #print random.randint(0, 2)
 
 #gen_min_graphs("g", 20, 20)
-gen_random_graphs("r", 20, 20, 0.5)
+gen_random_graphs("r", 10, 10, 0.5)
